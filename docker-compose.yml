@@ -20,17 +20,32 @@ services:
       - DASHBOARD_URL=http://dashboard:5000
     networks:
       - packetsentry
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
     logging: *default-logging
+
+  # ⚠️  ATTACK PROFILE — OPT-IN ONLY ⚠️
+  # The claude-agent service below is ONLY started when you run:
+  #   docker compose --profile attack up
+  # It uses dangerous runtime privileges for packet capture and experimentation:
+  # • host networking (captures all host traffic, bypasses container isolation)
+  # • NET_ADMIN + NET_RAW capabilities (required for tshark/tcpdump packet capture)
+  # • Previously mounted docker.sock (REMOVED — was unused, container-escape vector)
+  # • Previously granted SYS_ADMIN (REMOVED — excessive, packet capture doesn't need it)
+  #
+  # ⚠️  DO NOT use this profile in production or on untrusted networks.
+  # ⚠️  This is for controlled security research and lab testing only.
 
   claude-agent:
     build: ./claude-agent
     container_name: packetsentry-agent
     network_mode: "host"
+    cap_drop:
+      - ALL
     cap_add:
       - NET_ADMIN
       - NET_RAW
-      - SYS_ADMIN
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-sonnet-4-6}
@@ -38,7 +53,8 @@ services:
       - DASHBOARD_URL=http://127.0.0.1:5000
     volumes:
       - pcap_storage:/pcaps
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       - traffic-engine
     restart: unless-stopped
@@ -56,6 +72,8 @@ services:
       - AGENT_URL=http://172.30.0.1:8000
     networks:
       - packetsentry
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
     logging: *default-logging
 
