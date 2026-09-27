@@ -1,8 +1,5 @@
 FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
 RUN groupadd -r -g 10001 appuser && \
     useradd -r -u 10001 -g appuser -s /sbin/nologin -c "Dashboard application user" appuser
 
